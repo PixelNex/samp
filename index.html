@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Happy Birthday! 🎂✨</title>
+  <meta name="description" content="Blow out the birthday candle and celebrate on your phone!">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎂</text></svg>">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="strawberry">
+  <!-- Particle Canvas -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- Ambient Flame Glow -->
+  <div class="ambient-glow" id="ambientGlow"></div>
+
+  <!-- DYNAMIC BACKGROUND PHOTO BACKDROP & FLOATING MEMORIES BEHIND CAKE -->
+  <div class="bg-photos-container" id="bgPhotosContainer" aria-hidden="true">
+    <!-- Ambient Cinematic Backdrop with Crossfade & Ken-Burns -->
+    <div class="bg-slideshow" id="bgSlideshow">
+      <div class="bg-slide-layer active" id="bgSlideA"></div>
+      <div class="bg-slide-layer" id="bgSlideB"></div>
+      <div class="bg-overlay-shade"></div>
+      <div class="bg-grid-overlay"></div>
+    </div>
+
+    <!-- Floating Memory Polaroids & Cards Cloud Behind Cake -->
+    <div class="floating-photos-cloud" id="floatingPhotosCloud">
+      <!-- Dynamic floating polaroids injected & transitioned by app.js -->
+    </div>
+  </div>
+
+  <!-- Mobile Screen Container -->
+  <div class="mobile-app">
+    
+    <!-- Top Minimal Bar -->
+    <header class="app-header">
+      <div class="header-badge">
+        <span class="sparkle-icon">✨</span>
+        <span id="headerNameTag">Birthday Celebration 🎂</span>
+      </div>
+      <div class="header-actions">
+        <button id="photoCustomizerBtn" class="header-action-btn" aria-label="Manage Photos" title="Add / View Photos">
+          <span>📸</span>
+        </button>
+        <button id="soundToggleBtn" class="sound-btn" aria-label="Toggle Sound" title="Toggle Sound">
+          <span id="soundIcon">🔊</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Center Cake Section -->
+    <main class="cake-stage" id="cakeStage">
+      
+      <div class="greeting-box">
+        <div class="mini-tag">🎂 Special Celebration 🎂</div>
+        <h1 class="hero-title">Happy Birthday, <span class="name-highlight" id="heroName">Bestie</span>!</h1>
+        <p class="hero-subtitle" id="heroSubtitle">Blow into your mic or tap the flame 🕯️</p>
+      </div>
+
+      <!-- 3D Birthday Cake -->
+      <div class="cake-element" id="cakeElement" title="Tap or blow to blow out the candle!">
+        
+        <!-- Candles Container -->
+        <div class="candles-rack" id="candlesRack">
+          <div class="candle-item" id="candle-0">
+            <div class="candle-flame" id="candleFlame">
+              <div class="flame-layer flame-outer"></div>
+              <div class="flame-layer flame-inner"></div>
+              <div class="flame-layer flame-core"></div>
+              <div class="flame-layer flame-blue"></div>
+            </div>
+            <div class="candle-wick"></div>
+            <div class="candle-stick"></div>
+          </div>
+        </div>
+
+        <!-- Top Tier -->
+        <div class="cake-tier tier-upper">
+          <div class="tier-frosting-top"></div>
+          <div class="drip-layer">
+            <svg viewBox="0 0 160 26" preserveAspectRatio="none" class="drip-svg">
+              <path d="M0,0 L160,0 L160,10 C145,10 140,20 130,20 C120,20 115,8 105,8 C95,8 90,22 80,22 C70,22 65,8 55,8 C45,8 40,18 30,18 C15,18 10,8 0,8 Z"></path>
+            </svg>
+          </div>
+          <div class="decorations-row">
+            <div class="strawberry"></div>
+            <div class="creamsnip"></div>
+            <div class="strawberry"></div>
+            <div class="creamsnip"></div>
+            <div class="strawberry"></div>
+          </div>
+        </div>
+
+        <!-- Bottom Tier -->
+        <div class="cake-tier tier-lower">
+          <div class="tier-frosting-top"></div>
+          <div class="drip-layer">
+            <svg viewBox="0 0 220 32" preserveAspectRatio="none" class="drip-svg">
+              <path d="M0,0 L220,0 L220,12 C200,12 195,24 185,24 C175,24 170,10 155,10 C140,10 135,26 120,26 C105,26 100,10 85,10 C70,10 65,22 50,22 C35,22 30,10 15,10 C5,10 0,6 0,6 Z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Porcelain Plate -->
+        <div class="plate-base">
+          <div class="plate-gold-ring"></div>
+        </div>
+      </div>
+
+      <!-- Quick Action Controls -->
+      <div class="action-controls-row">
+        <button id="blowBtn" class="blow-action-btn" aria-label="Blow candle">
+          <span class="btn-icon">💨</span>
+          <span class="btn-text">Tap to Blow Out</span>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Bottom Guidance & Mic Status Pill -->
+    <footer class="bottom-bar">
+      <button class="mic-status-pill clickable" id="micStatusPill" aria-label="Toggle Microphone Blow Detection" title="Click to enable or test microphone blow">
+        <span class="pulse-dot" id="micPulseDot"></span>
+        <span id="micStatusText">🎙️ Enable Mic to Blow • Or Tap 💨</span>
+        <span class="mic-meter" id="micMeter"><span class="mic-meter-fill" id="micMeterFill"></span></span>
+      </button>
+      <p class="hint-text" id="hintText">💡 Blow into mic, tap flame/cake, or click floating photos 📸</p>
+    </footer>
+  </div>
+
+  <!-- CELEBRATION PHONE POP-UP STORY MODAL -->
+  <div class="story-overlay" id="storyOverlay">
+    <div class="story-card" id="storyCard">
+      
+      <!-- Top Story Bar with Progress Indicators & Close/Relight Buttons -->
+      <div class="story-top-bar">
+        <div class="story-progress-indicators" id="storyProgress">
+          <div class="progress-segment active"></div>
+        </div>
+        <div class="story-header-actions">
+          <button id="relightBtn" class="round-action-btn" title="Relight Candle" aria-label="Relight">🔥</button>
+          <button id="closeStoryBtn" class="round-action-btn" title="Close" aria-label="Close">✕</button>
+        </div>
+      </div>
+
+      <!-- Friend Title -->
+      <div class="story-title-area">
+        <div class="story-badge">🎉 CELEBRATION TIME 🎉</div>
+        <h2 class="story-name">Happy Birthday, <span id="storyFriendName">Bestie</span>! 🎈</h2>
+      </div>
+
+      <!-- Main Photo Showcase with Swipe & Tap Navigation -->
+      <div class="story-photo-wrapper" id="photoWrapper">
+        <div class="photo-touch-left" id="touchPrev" title="Previous photo"></div>
+        <div class="photo-touch-right" id="touchNext" title="Next photo"></div>
+        
+        <div class="story-photo-frame" id="photoFrame">
+          <img id="storyPhotoImg" class="story-img" src="https://images.unsplash.com/photo-1513151233558-d860c5398176?w=700&auto=format&fit=crop&q=80" alt="Birthday Celebration">
+          <div class="photo-tape-badge">✨ MEMORY ✨</div>
+        </div>
+      </div>
+
+      <!-- Caption & Personal Birthday Message -->
+      <div class="story-message-container">
+        <p class="story-caption" id="storyPhotoCaption">✨ Special memories with you! 💖</p>
+        <p class="story-note" id="storyNote">
+          "Wishing you a day filled with laughter, delicious cake, love, and all your biggest dreams coming true! Happy Birthday! 💖✨"
+        </p>
+      </div>
+
+      <!-- Subtle Tap Hint for Photos -->
+      <div class="photo-hint-footer" id="photoHintFooter">
+        <span>👈 Tap left / right to see photos 👉</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FLOATING PHOTO LIGHTBOX PREVIEW MODAL -->
+  <div class="lightbox-overlay" id="lightboxOverlay">
+    <div class="lightbox-card">
+      <button class="lightbox-close-btn" id="lightboxCloseBtn" aria-label="Close Preview">✕</button>
+      <div class="lightbox-img-wrap">
+        <img id="lightboxImg" src="" alt="Memory Preview">
+      </div>
+      <div class="lightbox-footer">
+        <p class="lightbox-caption" id="lightboxCaption"></p>
+        <div class="lightbox-nav-btns">
+          <button id="lightboxPrevBtn" class="lightbox-nav-btn" aria-label="Previous">❮</button>
+          <button id="lightboxNextBtn" class="lightbox-nav-btn" aria-label="Next">❯</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTO MANAGER / UPLOADER MODAL -->
+  <div class="manager-overlay" id="managerOverlay">
+    <div class="manager-card">
+      <div class="manager-header">
+        <div class="manager-title-row">
+          <span class="manager-icon">📸</span>
+          <h3>Customize Birthday Photos</h3>
+        </div>
+        <button class="round-action-btn" id="closeManagerBtn" aria-label="Close Manager">✕</button>
+      </div>
+
+      <div class="manager-body">
+        <p class="manager-desc">
+          Add special photos of your friend to appear in the floating memories and background transitions behind the cake!
+        </p>
+
+        <!-- Drop / Upload Area -->
+        <div class="upload-dropzone" id="uploadDropzone">
+          <input type="file" id="photoFileInput" multiple accept="image/*" class="file-input-hidden">
+          <div class="dropzone-content">
+            <span class="dropzone-icon">📁</span>
+            <p class="dropzone-text"><strong>Click to select</strong> or drag & drop photos here</p>
+            <span class="dropzone-sub">Supports JPG, PNG, WEBP, GIF</span>
+          </div>
+        </div>
+
+        <!-- Or Add by URL -->
+        <div class="url-input-row">
+          <input type="url" id="photoUrlInput" placeholder="Or paste image URL (e.g. photos/pic1.jpg)..." class="manager-input">
+          <button id="addUrlPhotoBtn" class="manager-add-btn">Add</button>
+        </div>
+
+        <!-- Current Photos List -->
+        <div class="photos-list-header">
+          <span>Active Photos (<span id="photoCountBadge">0</span>)</span>
+          <button id="resetPhotosBtn" class="text-btn">Reset to Default</button>
+        </div>
+
+        <div class="manager-photos-grid" id="managerPhotosGrid">
+          <!-- Thumbnail cards rendered by JS -->
+        </div>
+      </div>
+
+      <div class="manager-footer">
+        <button id="saveManagerBtn" class="blow-action-btn full-width">Done ✨</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="audio.js"></script>
+  <script src="blow-detector.js"></script>
+  <script src="particles.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
