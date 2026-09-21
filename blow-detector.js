@@ -1,6 +1,6 @@
 /**
- * Stable microphone blow detector.
- * Candle extinguishes only after a strong, sustained blow.
+ * Strict microphone blow detector.
+ * The candle extinguishes only after a very strong, sustained blow.
  */
 class BlowDetector {
   constructor(options = {}) {
@@ -11,9 +11,8 @@ class BlowDetector {
     this.isListening = false;
     this.micPermissionState = 'prompt';
 
-    // Higher intensity requirement to prevent accidental extinguishing.
-    this.blowThreshold = options.threshold ?? 70;
-    this.requiredSustainedFrames = 24;
+    this.blowThreshold = options.threshold ?? 85;
+    this.requiredSustainedFrames = 40;
     this.sustainedBlowCount = 0;
     this.smoothedIntensity = 0;
     this.ambientBaseline = 0;
@@ -58,11 +57,11 @@ class BlowDetector {
       const source = this.audioCtx.createMediaStreamSource(this.mediaStream);
       this.filter = this.audioCtx.createBiquadFilter();
       this.filter.type = 'lowpass';
-      this.filter.frequency.value = 700;
+      this.filter.frequency.value = 600;
       this.filter.Q.value = 0.7;
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 1024;
-      this.analyser.smoothingTimeConstant = 0.35;
+      this.analyser.fftSize = 2048;
+      this.analyser.smoothingTimeConstant = 0.2;
       source.connect(this.filter);
       this.filter.connect(this.analyser);
 
@@ -112,42 +111,38 @@ class BlowDetector {
       const rms = Math.sqrt(sumSquares / timeData.length);
 
       let low = 0;
-      for (let i = 1; i <= 12; i++) low += frequencyData[i] || 0;
-      const lowAverage = low / 12;
+      for (let i = 1; i <= 10; i++) low += frequencyData[i] || 0;
+      const lowAverage = low / 10;
 
       let high = 0;
       let highBins = 0;
-      for (let i = 25; i <= 70 && i < frequencyData.length; i++) {
+      for (let i = 30; i <= 90 && i < frequencyData.length; i++) {
         high += frequencyData[i];
         highBins++;
       }
       const highAverage = highBins ? high / highBins : 0;
 
       if (this.ambientBaseline === 0) this.ambientBaseline = lowAverage;
-      else this.ambientBaseline = this.ambientBaseline * 0.995 + lowAverage * 0.005;
+      else this.ambientBaseline = this.ambientBaseline * 0.998 + lowAverage * 0.002;
 
       const netLow = Math.max(0, lowAverage - this.ambientBaseline);
-      const ratio = (lowAverage + 10) / (highAverage + 10);
-      const blowScore = Math.min(100, Math.round(netLow * 1.8 + rms * 500 * Math.min(ratio, 2)));
+      const ratio = (lowAverage + 8) / (highAverage + 8);
+      const blowScore = Math.min(100, Math.round(netLow * 2 + rms * 500 * Math.min(ratio, 2)));
 
-      this.smoothedIntensity = this.smoothedIntensity * 0.65 + blowScore * 0.35;
+      this.smoothedIntensity = this.smoothedIntensity * 0.75 + blowScore * 0.25;
       this.onBlowIntensity(Math.min(1, this.smoothedIntensity / 100), blowScore);
 
-      // Require genuinely strong airflow, low-frequency dominance, and duration.
       const genuineBlow =
-        rms > 0.09 &&
-        netLow > 18 &&
-        ratio > 1.35 &&
+        rms > 0.14 &&
+        netLow > 28 &&
+        ratio > 1.5 &&
         blowScore >= this.blowThreshold;
 
       if (genuineBlow) this.sustainedBlowCount++;
-      else this.sustainedBlowCount = Math.max(0, this.sustainedBlowCount - 3);
+      else this.sustainedBlowCount = 0;
 
       const now = performance.now();
-      if (
-        this.sustainedBlowCount >= this.requiredSustainedFrames &&
-        now - this.lastDetectionTime > 3000
-      ) {
+      if (this.sustainedBlowCount >= this.requiredSustainedFrames && now - this.lastDetectionTime > 4000) {
         this.sustainedBlowCount = 0;
         this.lastDetectionTime = now;
         this.onBlowDetected();
