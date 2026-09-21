@@ -131,15 +131,38 @@ document.addEventListener('DOMContentLoaded', () => {
    * Load photos from LocalStorage or Default
    */
   function loadSavedPhotos() {
-    try {
-      const saved = localStorage.getItem('birthday_custom_photos');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+  try {
+    const saved = localStorage.getItem('birthday_custom_photos');
+
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      if (Array.isArray(parsed) && parsed.length >= 8) {
+        return parsed.map((photo, index) => {
+          const photoObject =
+            typeof photo === 'string'
+              ? {
+                  url: photo,
+                  caption: `Memory #${index + 1} 💖`
+                }
+              : photo;
+
+          return {
+            ...photoObject,
+            url: photoObject.url
+              .replace(/photos\/Photo(\d+)\.jpg/gi, 'photos/photo$1.jpg')
+              .replace(/Photo(\d+)\.jpg/gi, 'photo$1.jpg')
+          };
+        });
       }
-    } catch (e) { }
-    return [...DEFAULT_BIRTHDAY_PHOTOS];
+    }
+  } catch (error) {
+    console.warn('Could not load saved photos:', error);
   }
+
+  // Always use all eight default photos if saved data is incomplete
+  return [...DEFAULT_BIRTHDAY_PHOTOS];
+}
 
   /**
    * Save photos to LocalStorage
