@@ -10,22 +10,22 @@
 // ==========================================================================
 const DEFAULT_BIRTHDAY_PHOTOS = [
   {
-    url: 'photos/photo1.jpg',
+    url: 'photos/Photo1.jpg',
     caption: '✨ Happy Birthday to the sweetest soul! 🥂',
     quote: '"Here\'s to you — the one who lights up every room and makes every moment magical. Wishing you a birthday as beautiful as you are! 🎂✨"'
   },
   {
-    url: 'photos/photo2.jpg',
+    url: 'photos/Photo2.jpg',
     caption: '🎈 Cheers to endless adventures & laughter! 🎉',
     quote: '"Every adventure is better with you in it. May this year bring you a thousand new stories, laughs, and unforgettable memories! 🌟🎈"'
   },
   {
-    url: 'photos/photo3.jpg',
+    url: 'photos/Photo3.jpg',
     caption: '💖 May all your sweetest dreams come true! 🎂',
     quote: '"You deserve every good thing life has to offer — mountains of joy, rivers of laughter, and a heart full of love. Happy Birthday! 💖🎂"'
   },
   {
-    url: 'photos/photo4.jpg',
+    url: 'photos/Photo4.jpg',
     caption: '🌟 Shine bright like the star you are! ✨',
     quote: '"You have this incredible ability to make the world a little brighter just by being in it. Never stop shining, superstar! 🌟✨"'
   },
@@ -35,17 +35,17 @@ const DEFAULT_BIRTHDAY_PHOTOS = [
     quote: '"Cheers to the most wonderful, hilarious, caring, and irreplaceable person I know. The world is a genuinely better place with you in it! 🥂💫"'
   },
   {
-    url: 'photos/photo6.jpg',
+    url: 'photos/Photo6.jpg',
     caption: '🎉 Wishing you the most magical year ahead! 🌈',
     quote: '"May this new year of your life be filled with open doors, brand new dreams coming true, and every happiness you\'ve ever imagined! 🎉🌈"'
   },
   {
-    url: 'photos/photo7.jpg',
+    url: 'photos/Photo7.jpg',
     caption: '🎈 Never stop smiling & shining! ✨',
     quote: '"Your smile is one of the most beautiful things in the world. Promise me you\'ll keep sharing it — because it makes everything better! 😊🎈"'
   },
   {
-    url: 'photos/photo8.jpg',
+    url: 'photos/Photo8.jpg',
     caption: '💖 Forever grateful for every memory together! 📸',
     quote: '"Thank you for every laugh, every memory, every moment we\'ve shared. Grateful doesn\'t even begin to cover it. Here\'s to many more! 💖📸"'
   }
