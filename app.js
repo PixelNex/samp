@@ -1,13 +1,13 @@
 /**
  * Phone-First Birthday Cake & Candle Interactive Experience
- * Dynamic Background Photo Gallery, Ken-Burns Transitions,
- * Floating Memory Cards, Story Showcase & Instant Mic Blow Detection
+ * Dynamic Background Photo Gallery, Ken-Burns Transitions, Floating Memory Cards,
+ * Story Showcase & Instant Mic Blow Detection
  */
 
 // ==========================================================================
-// 📸 CURATED BIRTHDAY & MEMORY PHOTOS
+// 📸 CURATED BIRTHDAY & MEMORY PHOTOS (Default library)
+// Users can customize/upload more via the Photo Manager or photos/ folder!
 // ==========================================================================
-
 const DEFAULT_BIRTHDAY_PHOTOS = [
   {
     url: 'photos/photo1.jpg',
@@ -50,36 +50,6 @@ const DEFAULT_BIRTHDAY_PHOTOS = [
     quote: '"Thank you for every laugh, every memory, every moment we\'ve shared. Grateful doesn\'t even begin to cover it. Here\'s to many more! 💖📸"'
   }
 ];
-
-// ==========================================================================
-// 📁 PHOTO URL NORMALIZATION
-// ==========================================================================
-
-function normalizePhotoUrl(url) {
-  if (typeof url !== 'string') {
-    return url;
-  }
-
-  return url
-    .replace(/photos\/Photo(\d+)\.jpg/gi, 'photos/photo$1.jpg')
-    .replace(/\/Photo(\d+)\.jpg/gi, '/photo$1.jpg')
-    .replace(/(^|[^a-z])Photo(\d+)\.jpg/gi, '$1photo$2.jpg');
-}
-
-function normalizePhoto(photo, index) {
-  const photoObject =
-    typeof photo === 'string'
-      ? {
-          url: photo,
-          caption: `Memory #${index + 1} 💖`
-        }
-      : photo;
-
-  return {
-    ...photoObject,
-    url: normalizePhotoUrl(photoObject.url)
-  };
-}
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements - Cake & Stage
@@ -158,106 +128,58 @@ document.addEventListener('DOMContentLoaded', () => {
     photos: loadSavedPhotos()
   };
 
-  // ==========================================================================
-  // 📸 PHOTO STORAGE
-  // ==========================================================================
-
   /**
-   * Load photos from LocalStorage.
-   *
-   * Old saved paths such as:
-   * photos/Photo1.jpg
-   *
-   * are automatically converted to:
-   * photos/photo1.jpg
+   * Load photos from LocalStorage or Default
    */
   function loadSavedPhotos() {
     try {
       const saved = localStorage.getItem('birthday_custom_photos');
-
       if (saved) {
         const parsed = JSON.parse(saved);
-
-        if (Array.isArray(parsed) && parsed.length >= 8) {
-          return parsed.map(normalizePhoto);
-        }
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (error) {
-      console.warn('Could not load saved photos:', error);
-    }
-
-    return DEFAULT_BIRTHDAY_PHOTOS.map(normalizePhoto);
+    } catch (e) { }
+    return [...DEFAULT_BIRTHDAY_PHOTOS];
   }
 
   /**
-   * Save photos to LocalStorage.
+   * Save photos to LocalStorage
    */
   function savePhotosToStorage() {
     try {
-      const normalizedPhotos = config.photos.map(normalizePhoto);
-      localStorage.setItem(
-        'birthday_custom_photos',
-        JSON.stringify(normalizedPhotos)
-      );
-    } catch (error) {
-      console.warn('Could not save photos:', error);
-    }
+      localStorage.setItem('birthday_custom_photos', JSON.stringify(config.photos));
+    } catch (e) { }
   }
 
-  // ==========================================================================
-  // 🔗 URL PARAMETERS
-  // ==========================================================================
-
   /**
-   * Parse URL Query / Hash for custom name & message.
+   * Parse URL Query / Hash for custom name & message
    */
   function parseUrlParams() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(
-        window.location.hash.replace(/^#/, '')
-      );
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const getParam = (key) => urlParams.get(key) || hashParams.get(key);
 
-      const getParam = (key) =>
-        urlParams.get(key) || hashParams.get(key);
+      if (getParam('name')) config.name = decodeURIComponent(getParam('name'));
+      if (getParam('msg')) config.message = decodeURIComponent(getParam('msg'));
 
-      if (getParam('name')) {
-        config.name = decodeURIComponent(getParam('name'));
-      }
-
-      if (getParam('msg')) {
-        config.message = decodeURIComponent(getParam('msg'));
-      }
-
-      /*
-       * If custom photos are provided through the URL,
-       * normalize their filenames before using them.
-       */
       const photoParam = getParam('photos');
-
       if (photoParam) {
         try {
           const parsed = JSON.parse(decodeURIComponent(photoParam));
-
           if (Array.isArray(parsed) && parsed.length > 0) {
-            config.photos = parsed.map(normalizePhoto);
+            config.photos = parsed.map((p, idx) => typeof p === 'string' ? { url: p, caption: `Memory #${idx + 1} with ${config.name} 💖` } : p);
           }
-        } catch (error) {
-          console.warn('Could not parse URL photos:', error);
-        }
+        } catch (e) { }
       }
-
-      // Final safety normalization
-      config.photos = config.photos.map(normalizePhoto);
-    } catch (error) {
-      console.warn('Could not parse URL parameters:', error);
-    }
+    } catch (e) { }
   }
 
-  // ==========================================================================
-  // 🌟 BACKGROUND PHOTO ENGINE
-  // ==========================================================================
-
+  /**
+   * ==========================================================================
+   * 🌟 BACKGROUND PHOTO ENGINE: CINEMATIC SLIDESHOW & FLOATING MEMORIES
+   * ==========================================================================
+   */
   class BackgroundPhotoEngine {
     constructor() {
       this.slotsCount = 6;
@@ -282,74 +204,66 @@ document.addEventListener('DOMContentLoaded', () => {
       this.setupParallaxListeners();
     }
 
+    /**
+     * Setup Dual-layer Backdrop for smooth Ken-Burns crossfades
+     */
     setupBackdrop() {
       if (!config.photos || config.photos.length === 0) return;
-
-      bgSlideA.style.backgroundImage =
-        `url("${normalizePhotoUrl(config.photos[0].url)}")`;
-
+      bgSlideA.style.backgroundImage = `url("${config.photos[0].url}")`;
       bgSlideA.classList.add('active');
       bgSlideB.classList.remove('active');
-
       if (config.photos.length > 1) {
-        bgSlideB.style.backgroundImage =
-          `url("${normalizePhotoUrl(config.photos[1].url)}")`;
+        bgSlideB.style.backgroundImage = `url("${config.photos[1].url}")`;
       }
     }
 
+    /**
+     * Start continuous background slideshow crossfade
+     */
     startBackdropLoop() {
-      if (this.slideTimer) {
-        clearInterval(this.slideTimer);
-      }
-
+      if (this.slideTimer) clearInterval(this.slideTimer);
       if (config.photos.length <= 1) return;
 
       this.slideTimer = setInterval(() => {
-        this.currentBgIndex =
-          (this.currentBgIndex + 1) % config.photos.length;
-
+        this.currentBgIndex = (this.currentBgIndex + 1) % config.photos.length;
         const nextPhoto = config.photos[this.currentBgIndex];
-        const nextPhotoUrl = normalizePhotoUrl(nextPhoto.url);
 
         if (this.activeSlideIsA) {
-          bgSlideB.style.backgroundImage = `url("${nextPhotoUrl}")`;
+          bgSlideB.style.backgroundImage = `url("${nextPhoto.url}")`;
           bgSlideB.classList.add('active');
           bgSlideA.classList.remove('active');
         } else {
-          bgSlideA.style.backgroundImage = `url("${nextPhotoUrl}")`;
+          bgSlideA.style.backgroundImage = `url("${nextPhoto.url}")`;
           bgSlideA.classList.add('active');
           bgSlideB.classList.remove('active');
         }
-
         this.activeSlideIsA = !this.activeSlideIsA;
       }, 10000);
     }
 
+    /**
+     * Create floating Polaroid memory cards around the cake
+     */
     setupFloatingCards() {
       floatingPhotosCloud.innerHTML = '';
       this.cards = [];
       this.cardIndices = [];
 
       const totalPhotos = config.photos.length;
-
       if (totalPhotos === 0) return;
 
       for (let i = 0; i < this.slotsCount; i++) {
         const photoIndex = i % totalPhotos;
-
         this.cardIndices.push(photoIndex);
-
         const photo = config.photos[photoIndex];
-        const photoUrl = normalizePhotoUrl(photo.url);
 
         const card = document.createElement('div');
-
         card.className = `floating-card slot-${i}`;
         card.dataset.slotIndex = i;
         card.dataset.photoIndex = photoIndex;
 
+        // Tape accent variety (tape / pin)
         let accentHtml = '';
-
         if (i % 3 === 0) {
           accentHtml = `<div class="card-tape tape-left"></div>`;
         } else if (i % 3 === 1) {
@@ -361,20 +275,14 @@ document.addEventListener('DOMContentLoaded', () => {
         card.innerHTML = `
           ${accentHtml}
           <div class="card-img-wrap">
-            <img
-              class="card-img"
-              src="${photoUrl}"
-              alt="${photo.caption || 'Memory'}"
-              loading="lazy"
-            >
+            <img class="card-img" src="${photo.url}" alt="${photo.caption || 'Memory'}" loading="lazy">
           </div>
-          <p class="card-caption">
-            ${photo.caption || 'Memory ✨'}
-          </p>
+          <p class="card-caption">${photo.caption || `Memory ✨`}</p>
         `;
 
-        card.addEventListener('click', (event) => {
-          event.stopPropagation();
+        // Click opens full preview in lightbox
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
           audio.init();
           audio.playPop();
           openLightbox(this.cardIndices[i]);
@@ -385,50 +293,38 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    /**
+     * Staggered dynamic transitions: one-by-one card photo flips & fades
+     */
     startCardTransitionLoop() {
-      if (this.cardTransitionTimer) {
-        clearInterval(this.cardTransitionTimer);
-      }
-
+      if (this.cardTransitionTimer) clearInterval(this.cardTransitionTimer);
       if (config.photos.length <= 1) return;
 
       this.cardTransitionTimer = setInterval(() => {
         if (this.cards.length === 0) return;
 
-        const slotIndex =
-          this.nextCardSlotToUpdate % this.cards.length;
-
+        const slotIndex = this.nextCardSlotToUpdate % this.cards.length;
         this.nextCardSlotToUpdate++;
 
         const card = this.cards[slotIndex];
-
         if (!card) return;
 
+        // Pick next photo in pool
         const currentIdx = this.cardIndices[slotIndex];
-
-        const nextIdx =
-          (currentIdx + this.slotsCount) % config.photos.length;
-
+        const nextIdx = (currentIdx + this.slotsCount) % config.photos.length;
         this.cardIndices[slotIndex] = nextIdx;
-
         const nextPhoto = config.photos[nextIdx];
-        const nextPhotoUrl = normalizePhotoUrl(nextPhoto.url);
 
-        const useFlip = slotIndex % 2 === 0;
+        // Randomize transition style: 3D Flip or Smooth Zoom-Fade
+        const useFlip = (slotIndex % 2 === 0);
 
         if (useFlip) {
           card.classList.add('flip-transition');
-
           setTimeout(() => {
             const img = card.querySelector('.card-img');
             const caption = card.querySelector('.card-caption');
-
-            if (img) img.src = nextPhotoUrl;
-
-            if (caption) {
-              caption.textContent =
-                nextPhoto.caption || 'Memory ✨';
-            }
+            if (img) img.src = nextPhoto.url;
+            if (caption) caption.textContent = nextPhoto.caption || 'Memory ✨';
           }, 350);
 
           setTimeout(() => {
@@ -436,26 +332,24 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 800);
         } else {
           card.classList.add('fade-transition');
-
           setTimeout(() => {
             const img = card.querySelector('.card-img');
             const caption = card.querySelector('.card-caption');
-
-            if (img) img.src = nextPhotoUrl;
-
-            if (caption) {
-              caption.textContent =
-                nextPhoto.caption || 'Memory ✨';
-            }
+            if (img) img.src = nextPhoto.url;
+            if (caption) caption.textContent = nextPhoto.caption || 'Memory ✨';
           }, 320);
 
           setTimeout(() => {
             card.classList.remove('fade-transition');
           }, 700);
         }
-      }, 10000);
+
+      }, 10000); // Trigger transition every 10s across alternating slots
     }
 
+    /**
+     * Refresh photos engine when user adds/deletes photos
+     */
     refresh() {
       this.setupBackdrop();
       this.setupFloatingCards();
@@ -463,63 +357,50 @@ document.addEventListener('DOMContentLoaded', () => {
       this.startCardTransitionLoop();
     }
 
+    /**
+     * 3D Parallax with mouse movement / device tilt
+     */
     setupParallaxListeners() {
       let ticking = false;
 
-      window.addEventListener(
-        'pointermove',
-        (event) => {
-          const cx = window.innerWidth / 2;
-          const cy = window.innerHeight / 2;
+      window.addEventListener('pointermove', (e) => {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        this.mouseParallaxX = (e.clientX - cx) / cx;
+        this.mouseParallaxY = (e.clientY - cy) / cy;
 
-          this.mouseParallaxX = (event.clientX - cx) / cx;
-          this.mouseParallaxY = (event.clientY - cy) / cy;
-
-          if (!ticking) {
-            window.requestAnimationFrame(() => {
-              if (floatingPhotosCloud) {
-                const moveX = this.mouseParallaxX * 16;
-                const moveY = this.mouseParallaxY * 14;
-                const rotX = -this.mouseParallaxY * 5;
-                const rotY = this.mouseParallaxX * 6;
-
-                floatingPhotosCloud.style.transform =
-                  `translate3d(${moveX}px, ${moveY}px, 0)
-                   rotateX(${rotX}deg)
-                   rotateY(${rotY}deg)`;
-              }
-
-              ticking = false;
-            });
-
-            ticking = true;
-          }
-        },
-        { passive: true }
-      );
+        if (!ticking) {
+          window.requestAnimationFrame(() => {
+            if (floatingPhotosCloud) {
+              const moveX = this.mouseParallaxX * 16;
+              const moveY = this.mouseParallaxY * 14;
+              const rotX = -this.mouseParallaxY * 5;
+              const rotY = this.mouseParallaxX * 6;
+              floatingPhotosCloud.style.transform = `translate3d(${moveX}px, ${moveY}px, 0) rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            }
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
     }
   }
 
   // Initialize Background Photo Engine
   const bgPhotoEngine = new BackgroundPhotoEngine();
 
-  // ==========================================================================
-  // 🔍 PHOTO LIGHTBOX
-  // ==========================================================================
-
+  /**
+   * ==========================================================================
+   * 🔍 PHOTO LIGHTBOX PREVIEW MODAL
+   * ==========================================================================
+   */
   function openLightbox(index) {
     if (!config.photos || config.photos.length === 0) return;
-
-    currentLightboxIndex =
-      (index + config.photos.length) % config.photos.length;
-
+    currentLightboxIndex = (index + config.photos.length) % config.photos.length;
     const photo = config.photos[currentLightboxIndex];
 
-    lightboxImg.src = normalizePhotoUrl(photo.url);
-
-    lightboxCaption.textContent =
-      photo.caption || `Memory with ${config.name} 💖`;
-
+    lightboxImg.src = photo.url;
+    lightboxCaption.textContent = photo.caption || `Memory with ${config.name} 💖`;
     lightboxOverlay.classList.add('active');
   }
 
@@ -529,11 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   lightboxCloseBtn.addEventListener('click', closeLightbox);
-
-  lightboxOverlay.addEventListener('click', (event) => {
-    if (event.target === lightboxOverlay) {
-      closeLightbox();
-    }
+  lightboxOverlay.addEventListener('click', (e) => {
+    if (e.target === lightboxOverlay) closeLightbox();
   });
 
   lightboxPrevBtn.addEventListener('click', () => {
@@ -546,10 +424,11 @@ document.addEventListener('DOMContentLoaded', () => {
     openLightbox(currentLightboxIndex + 1);
   });
 
-  // ==========================================================================
-  // 📁 PHOTO MANAGER
-  // ==========================================================================
-
+  /**
+   * ==========================================================================
+   * 📁 PHOTO MANAGER & UPLOADER MODAL
+   * ==========================================================================
+   */
   function openPhotoManager() {
     audio.init();
     audio.playPop();
@@ -566,35 +445,19 @@ document.addEventListener('DOMContentLoaded', () => {
     photoCountBadge.textContent = config.photos.length;
     managerPhotosGrid.innerHTML = '';
 
-    config.photos.forEach((photo, index) => {
+    config.photos.forEach((photo, idx) => {
       const item = document.createElement('div');
-
       item.className = 'manager-photo-item';
-
       item.innerHTML = `
-        <img
-          src="${normalizePhotoUrl(photo.url)}"
-          alt="${photo.caption || 'Photo'}"
-        >
-        <button
-          class="manager-delete-btn"
-          data-delete-idx="${index}"
-          title="Delete Photo"
-        >
-          ✕
-        </button>
+        <img src="${photo.url}" alt="${photo.caption || 'Photo'}">
+        <button class="manager-delete-btn" data-delete-idx="${idx}" title="Delete Photo">✕</button>
       `;
 
-      const deleteButton =
-        item.querySelector('.manager-delete-btn');
-
-      deleteButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-
+      const delBtn = item.querySelector('.manager-delete-btn');
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         audio.playPop();
-
-        config.photos.splice(index, 1);
-
+        config.photos.splice(idx, 1);
         savePhotosToStorage();
         renderManagerPhotosList();
         bgPhotoEngine.refresh();
@@ -605,39 +468,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  if (photoCustomizerBtn) {
-    photoCustomizerBtn.addEventListener(
-      'click',
-      openPhotoManager
-    );
-  }
-
-  if (closeManagerBtn) {
-    closeManagerBtn.addEventListener(
-      'click',
-      closePhotoManager
-    );
-  }
-
-  if (saveManagerBtn) {
-    saveManagerBtn.addEventListener(
-      'click',
-      closePhotoManager
-    );
-  }
-
-  managerOverlay.addEventListener('click', (event) => {
-    if (event.target === managerOverlay) {
-      closePhotoManager();
-    }
+  // Open & Close manager
+  if (photoCustomizerBtn) photoCustomizerBtn.addEventListener('click', openPhotoManager);
+  if (closeManagerBtn) closeManagerBtn.addEventListener('click', closePhotoManager);
+  if (saveManagerBtn) saveManagerBtn.addEventListener('click', closePhotoManager);
+  managerOverlay.addEventListener('click', (e) => {
+    if (e.target === managerOverlay) closePhotoManager();
   });
 
   // Reset to default presets
   resetPhotosBtn.addEventListener('click', () => {
     audio.playClick();
-
-    config.photos = DEFAULT_BIRTHDAY_PHOTOS.map(normalizePhoto);
-
+    config.photos = [...DEFAULT_BIRTHDAY_PHOTOS];
     savePhotosToStorage();
     renderManagerPhotosList();
     bgPhotoEngine.refresh();
@@ -647,42 +489,29 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add photo by URL
   function addPhotoFromInput() {
     const url = photoUrlInput.value.trim();
-
     if (!url) return;
-
     config.photos.push({
-      url: normalizePhotoUrl(url),
+      url: url,
       caption: `✨ Special memory with ${config.name}! 💖`
     });
-
     photoUrlInput.value = '';
-
     savePhotosToStorage();
     renderManagerPhotosList();
     bgPhotoEngine.refresh();
     applyConfig();
-
     audio.playPop();
   }
 
-  addUrlPhotoBtn.addEventListener(
-    'click',
-    addPhotoFromInput
-  );
-
-  photoUrlInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') {
-      addPhotoFromInput();
-    }
+  addUrlPhotoBtn.addEventListener('click', addPhotoFromInput);
+  photoUrlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addPhotoFromInput();
   });
 
   // Drag & drop / File input upload
-  uploadDropzone.addEventListener('click', () => {
-    photoFileInput.click();
-  });
+  uploadDropzone.addEventListener('click', () => photoFileInput.click());
 
-  uploadDropzone.addEventListener('dragover', (event) => {
-    event.preventDefault();
+  uploadDropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
     uploadDropzone.classList.add('drag-over');
   });
 
@@ -690,25 +519,17 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadDropzone.classList.remove('drag-over');
   });
 
-  uploadDropzone.addEventListener('drop', (event) => {
-    event.preventDefault();
-
+  uploadDropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
     uploadDropzone.classList.remove('drag-over');
-
-    if (
-      event.dataTransfer.files &&
-      event.dataTransfer.files.length > 0
-    ) {
-      handleImageFiles(event.dataTransfer.files);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleImageFiles(e.dataTransfer.files);
     }
   });
 
-  photoFileInput.addEventListener('change', (event) => {
-    if (
-      event.target.files &&
-      event.target.files.length > 0
-    ) {
-      handleImageFiles(event.target.files);
+  photoFileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleImageFiles(e.target.files);
       photoFileInput.value = '';
     }
   });
@@ -717,30 +538,27 @@ document.addEventListener('DOMContentLoaded', () => {
     Array.from(files).forEach((file) => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-
         reader.onload = (loadEvent) => {
           config.photos.unshift({
             url: loadEvent.target.result,
             caption: `✨ Photo memory with ${config.name}! 💖`
           });
-
           savePhotosToStorage();
           renderManagerPhotosList();
           bgPhotoEngine.refresh();
           applyConfig();
         };
-
         reader.readAsDataURL(file);
       }
     });
-
     audio.playPop();
   }
 
-  // ==========================================================================
-  // 🎂 APP CONFIGURATION & STORY SHOWCASE
-  // ==========================================================================
-
+  /**
+   * ==========================================================================
+   * 🎂 APP CONFIGURATION & STORY SHOWCASE
+   * ==========================================================================
+   */
   function applyConfig() {
     heroName.textContent = config.name;
     headerNameTag.textContent = `${config.name}'s Birthday 🎂`;
@@ -750,84 +568,69 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStoryPhoto(0);
   }
 
+  /**
+   * Story Progress Indicators (Instagram / Story style segments)
+   */
   function setupStoryProgressBars() {
     storyProgress.innerHTML = '';
-
-    config.photos.forEach((_, index) => {
-      const segment = document.createElement('div');
-
-      segment.className =
-        `progress-segment ${index === 0 ? 'active' : ''}`;
-
-      segment.addEventListener('click', () => {
-        currentStoryIndex = index;
-        updateStoryPhoto(index);
+    config.photos.forEach((_, idx) => {
+      const seg = document.createElement('div');
+      seg.className = `progress-segment ${idx === 0 ? 'active' : ''}`;
+      seg.addEventListener('click', () => {
+        currentStoryIndex = idx;
+        updateStoryPhoto(idx);
         restartStoryTimer();
       });
-
-      storyProgress.appendChild(segment);
+      storyProgress.appendChild(seg);
     });
   }
 
+  /**
+   * Update Story Photo with Smooth Fade Transition
+   */
   function updateStoryPhoto(index) {
-    if (!config.photos || config.photos.length === 0) {
-      return;
-    }
+    if (!config.photos || config.photos.length === 0) return;
 
-    if (index >= config.photos.length) {
-      currentStoryIndex = 0;
-    } else if (index < 0) {
-      currentStoryIndex = config.photos.length - 1;
-    } else {
-      currentStoryIndex = index;
-    }
+    if (index >= config.photos.length) currentStoryIndex = 0;
+    else if (index < 0) currentStoryIndex = config.photos.length - 1;
+    else currentStoryIndex = index;
 
     const current = config.photos[currentStoryIndex];
     const storyNote = document.getElementById('storyNote');
 
+    // Fade out photo + quote together
     storyPhotoImg.classList.add('fade-out');
-
-    if (storyNote) {
-      storyNote.classList.add('story-note-fade-out');
-    }
+    if (storyNote) storyNote.classList.add('story-note-fade-out');
 
     setTimeout(() => {
-      storyPhotoImg.src = normalizePhotoUrl(current.url);
-
-      storyPhotoCaption.textContent =
-        current.caption ||
-        `✨ Memory with ${config.name} 💖`;
-
+      // Swap photo
+      storyPhotoImg.src = current.url;
+      storyPhotoCaption.textContent = current.caption || `✨ Memory with ${config.name} 💖`;
       storyPhotoImg.classList.remove('fade-out');
 
+      // Swap quote — use photo's own quote, fall back to config.message, then a generic one
       if (storyNote) {
-        storyNote.textContent =
-          current.quote || `"${config.message}"`;
-
+        storyNote.textContent = current.quote || `"${config.message}"`;
         storyNote.classList.remove('story-note-fade-out');
       }
     }, 180);
 
-    const segments =
-      storyProgress.querySelectorAll('.progress-segment');
-
-    segments.forEach((segment, indexValue) => {
-      segment.classList.toggle(
-        'active',
-        indexValue === currentStoryIndex
-      );
+    // Update Progress Segments
+    const segments = storyProgress.querySelectorAll('.progress-segment');
+    segments.forEach((seg, idx) => {
+      seg.classList.toggle('active', idx === currentStoryIndex);
     });
   }
 
+  /**
+   * Auto Advance Story Slideshow
+   */
   function startStoryTimer() {
     stopStoryTimer();
-
     if (config.photos.length > 1) {
       storyTimer = setInterval(() => {
         if (storyOverlay.classList.contains('active')) {
-          currentStoryIndex =
-            (currentStoryIndex + 1) % config.photos.length;
-
+          currentStoryIndex = (currentStoryIndex + 1) % config.photos.length;
           updateStoryPhoto(currentStoryIndex);
         }
       }, 10000);
@@ -846,109 +649,71 @@ document.addEventListener('DOMContentLoaded', () => {
     startStoryTimer();
   }
 
-  // Story navigation
-  touchPrev.addEventListener('click', (event) => {
-    event.stopPropagation();
-
+  // Tap left / right navigation on story modal photo
+  touchPrev.addEventListener('click', (e) => {
+    e.stopPropagation();
     audio.playClick();
     updateStoryPhoto(currentStoryIndex - 1);
     restartStoryTimer();
   });
 
-  touchNext.addEventListener('click', (event) => {
-    event.stopPropagation();
-
+  touchNext.addEventListener('click', (e) => {
+    e.stopPropagation();
     audio.playClick();
     updateStoryPhoto(currentStoryIndex + 1);
     restartStoryTimer();
   });
 
-  // Touch Swipe Gesture Detection
+  // Touch Swipe Gesture Detection for Mobile Story
   let touchStartX = 0;
   let touchEndX = 0;
 
-  photoWrapper.addEventListener(
-    'touchstart',
-    (event) => {
-      touchStartX = event.changedTouches[0].screenX;
-    },
-    { passive: true }
-  );
+  photoWrapper.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
 
-  photoWrapper.addEventListener(
-    'touchend',
-    (event) => {
-      touchEndX = event.changedTouches[0].screenX;
+  photoWrapper.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) updateStoryPhoto(currentStoryIndex - 1);
+      else updateStoryPhoto(currentStoryIndex + 1);
+      restartStoryTimer();
+    }
+  }, { passive: true });
 
-      const difference = touchEndX - touchStartX;
-
-      if (Math.abs(difference) > 40) {
-        if (difference > 0) {
-          updateStoryPhoto(currentStoryIndex - 1);
-        } else {
-          updateStoryPhoto(currentStoryIndex + 1);
-        }
-
-        restartStoryTimer();
-      }
-    },
-    { passive: true }
-  );
-
-  // ==========================================================================
-  // 🕯️ CANDLE FUNCTIONS
-  // ==========================================================================
-
+  /**
+   * Get pixel coordinates of candle wick
+   */
   function getCandleWickCoordinates() {
     const wick = document.querySelector('.candle-wick');
-
-    if (!wick) {
-      return [
-        {
-          x: window.innerWidth / 2,
-          y: window.innerHeight * 0.45
-        }
-      ];
-    }
-
+    if (!wick) return [{ x: window.innerWidth / 2, y: window.innerHeight * 0.45 }];
     const rect = wick.getBoundingClientRect();
-
-    return [
-      {
-        x: rect.left + rect.width / 2,
-        y: rect.top + 2
-      }
-    ];
+    return [{
+      x: rect.left + rect.width / 2,
+      y: rect.top + 2
+    }];
   }
 
+  /**
+   * Extinguish Candle & Trigger Grand Celebration Story Pop-up
+   */
   function extinguishCandles() {
     if (!isLit) return;
-
     isLit = false;
     isCelebrating = true;
 
-    const candleItem =
-      document.querySelector('.candle-item');
+    const candleItem = document.querySelector('.candle-item');
+    const flame = candleFlame || document.querySelector('.candle-flame');
 
-    const flame =
-      candleFlame ||
-      document.querySelector('.candle-flame');
-
-    if (candleItem) {
-      candleItem.classList.add('extinguished');
-    }
-
+    // Visual flame extinguish
+    if (candleItem) candleItem.classList.add('extinguished');
     if (flame) {
-      flame.classList.add(
-        'flame-extinguishing',
-        'extinguished'
-      );
-
+      flame.classList.add('flame-extinguishing', 'extinguished');
       flame.style.display = 'none';
       flame.style.opacity = '0';
       flame.style.visibility = 'hidden';
-      flame.style.transform =
-        'scale(0.01) translateY(-15px)';
+      flame.style.transform = 'scale(0.01) translateY(-15px)';
     }
 
     document.body.classList.add('blown-out');
@@ -956,78 +721,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if (blowBtn) {
       blowBtn.disabled = true;
       blowBtn.classList.add('blown');
-
-      blowBtn.innerHTML =
-        '<span class="btn-icon">🎉</span>' +
-        '<span class="btn-text">Candle Blown!</span>';
+      blowBtn.innerHTML = '<span class="btn-icon">🎉</span><span class="btn-text">Candle Blown!</span>';
     }
 
+    // SFX
     audio.playExtinguish();
 
-    const wickCoordinates = getCandleWickCoordinates();
+    // Realistic smoke wisps from wick
+    const wickCoords = getCandleWickCoordinates();
+    particles.startSmoke(wickCoords, 4000);
 
-    particles.startSmoke(wickCoordinates, 4000);
+    heroSubtitle.textContent = '🎉 Happy Birthday! Celebration time! ✨';
+    micStatusText.textContent = '💨 Candle Blown Out!';
+    if (micMeterFill) micMeterFill.style.width = '0%';
 
-    heroSubtitle.textContent =
-      '🎉 Happy Birthday! Celebration time! ✨';
-
-    micStatusText.textContent =
-      '💨 Candle Blown Out!';
-
-    if (micMeterFill) {
-      micMeterFill.style.width = '0%';
-    }
-
+    // Celebration phase
     setTimeout(() => {
       document.body.classList.add('celebration-mode');
 
+      // Fanfare & Confetti
       audio.playHappyBirthdayFanfare();
       audio.playPop();
 
       particles.launchConfettiBlast(220);
       particles.launchBalloons(16);
 
-      setTimeout(() => {
-        particles.launchConfettiBlast(140);
-      }, 700);
+      setTimeout(() => particles.launchConfettiBlast(140), 700);
 
+      // Open mobile celebration story pop-up
       setTimeout(() => {
         storyOverlay.classList.add('active');
         startStoryTimer();
       }, 750);
+
     }, 350);
   }
 
+  /**
+   * Relight candles
+   */
   function relightCandles() {
     isLit = true;
     isCelebrating = false;
-
     stopStoryTimer();
 
-    document.body.classList.remove(
-      'blown-out',
-      'celebration-mode'
-    );
-
+    document.body.classList.remove('blown-out', 'celebration-mode');
     storyOverlay.classList.remove('active');
 
-    const candleItem =
-      document.querySelector('.candle-item');
+    const candleItem = document.querySelector('.candle-item');
+    if (candleItem) candleItem.classList.remove('extinguished');
 
-    if (candleItem) {
-      candleItem.classList.remove('extinguished');
-    }
-
-    const flame =
-      candleFlame ||
-      document.querySelector('.candle-flame');
-
+    const flame = candleFlame || document.querySelector('.candle-flame');
     if (flame) {
-      flame.classList.remove(
-        'flame-extinguishing',
-        'extinguished'
-      );
-
+      flame.classList.remove('flame-extinguishing', 'extinguished');
       flame.style.display = '';
       flame.style.opacity = '';
       flame.style.visibility = '';
@@ -1037,37 +783,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (blowBtn) {
       blowBtn.disabled = false;
       blowBtn.classList.remove('blown');
-
-      blowBtn.innerHTML =
-        '<span class="btn-icon">💨</span>' +
-        '<span class="btn-text">Tap to Blow Out</span>';
+      blowBtn.innerHTML = '<span class="btn-icon">💨</span><span class="btn-text">Tap to Blow Out</span>';
     }
 
     audio.playRelight();
 
-    heroSubtitle.textContent =
-      'Blow into your mic or tap the flame 🕯️';
-
+    heroSubtitle.textContent = 'Blow into your mic or tap the flame 🕯️';
     if (isMicActive) {
-      micStatusText.textContent =
-        '🎙️ Mic listening • Blow into mic! 💨';
+      micStatusText.textContent = '🎙️ Mic listening • Blow into mic! 💨';
     } else {
-      micStatusText.textContent =
-        '🎙️ Enable Mic to Blow • Or Tap 💨';
+      micStatusText.textContent = '🎙️ Enable Mic to Blow • Or Tap 💨';
     }
   }
 
-  // ==========================================================================
-  // 🎙️ BLOW DETECTOR
-  // ==========================================================================
-
+  /**
+   * Ultra-Sensitive Blow Detector
+   */
   const blowDetector = new BlowDetector({
     threshold: 12,
-
     onBlowIntensity: (intensity, score) => {
-      const flame =
-        candleFlame ||
-        document.querySelector('.candle-flame');
+      const flame = candleFlame || document.querySelector('.candle-flame');
 
       if (!isLit) {
         if (flame) {
@@ -1075,33 +810,17 @@ document.addEventListener('DOMContentLoaded', () => {
           flame.style.opacity = '0';
           flame.style.visibility = 'hidden';
         }
-
-        if (micMeterFill) {
-          micMeterFill.style.width = '0%';
-        }
-
+        if (micMeterFill) micMeterFill.style.width = '0%';
         return;
       }
 
       if (flame) {
         if (intensity > 0.02) {
-          const bendAngle =
-            (Math.random() - 0.5) * 8 +
-            intensity * 38;
-
-          const stretchScale =
-            Math.max(0.25, 1 - intensity * 0.6);
-
-          const squishScale =
-            1 + intensity * 0.45;
-
-          flame.style.transform =
-            `rotate(${bendAngle}deg)
-             scaleY(${stretchScale})
-             scaleX(${squishScale})`;
-
-          flame.style.opacity =
-            `${Math.max(0.25, 1 - intensity * 0.75)}`;
+          const bendAngle = (Math.random() - 0.5) * 8 + (intensity * 38);
+          const stretchScale = Math.max(0.25, 1 - intensity * 0.6);
+          const squishScale = 1 + intensity * 0.45;
+          flame.style.transform = `rotate(${bendAngle}deg) scaleY(${stretchScale}) scaleX(${squishScale})`;
+          flame.style.opacity = `${Math.max(0.25, 1 - intensity * 0.75)}`;
         } else {
           flame.style.transform = '';
           flame.style.opacity = '';
@@ -1109,140 +828,83 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (micMeterFill) {
-        micMeterFill.style.width =
-          `${Math.min(100, Math.round(intensity * 100))}%`;
+        micMeterFill.style.width = `${Math.min(100, Math.round(intensity * 100))}%`;
       }
     },
-
     onBlowDetected: () => {
       if (isLit) {
         extinguishCandles();
       }
     },
-
     onStatusChange: (status) => {
       if (status === 'listening') {
         isMicActive = true;
-
-        micStatusText.textContent =
-          '🎙️ Mic Active • Blow into mic! 💨';
-
-        if (micPulseDot) {
-          micPulseDot.className =
-            'pulse-dot active';
-        }
-
-        if (micStatusPill) {
-          micStatusPill.classList.add('mic-active');
-        }
+        micStatusText.textContent = '🎙️ Mic Active • Blow into mic! 💨';
+        if (micPulseDot) micPulseDot.className = 'pulse-dot active';
+        if (micStatusPill) micStatusPill.classList.add('mic-active');
       } else if (status === 'requesting') {
-        micStatusText.textContent =
-          '⏳ Requesting microphone...';
-
-        if (micPulseDot) {
-          micPulseDot.className =
-            'pulse-dot requesting';
-        }
+        micStatusText.textContent = '⏳ Requesting microphone...';
+        if (micPulseDot) micPulseDot.className = 'pulse-dot requesting';
       } else if (status === 'denied') {
         isMicActive = false;
-
-        micStatusText.textContent =
-          '👆 Mic blocked • Tap flame or cake to blow 🕯️';
-
-        if (micPulseDot) {
-          micPulseDot.className =
-            'pulse-dot denied';
-        }
-
-        if (micStatusPill) {
-          micStatusPill.classList.remove('mic-active');
-        }
+        micStatusText.textContent = '👆 Mic blocked • Tap flame or cake to blow 🕯️';
+        if (micPulseDot) micPulseDot.className = 'pulse-dot denied';
+        if (micStatusPill) micStatusPill.classList.remove('mic-active');
       } else if (status === 'unsupported') {
         isMicActive = false;
-
-        micStatusText.textContent =
-          '👆 Tap flame or button to blow 🕯️';
-
-        if (micPulseDot) {
-          micPulseDot.className =
-            'pulse-dot denied';
-        }
-
-        if (micStatusPill) {
-          micStatusPill.classList.remove('mic-active');
-        }
+        micStatusText.textContent = '👆 Tap flame or button to blow 🕯️';
+        if (micPulseDot) micPulseDot.className = 'pulse-dot denied';
+        if (micStatusPill) micStatusPill.classList.remove('mic-active');
       }
     }
   });
 
-  // Pointer hover near candle flame
-  document.addEventListener('pointermove', (event) => {
+  /**
+   * Pointer hover near candle flame
+   */
+  document.addEventListener('pointermove', (e) => {
     if (!isLit || isMicActive) return;
-
-    const flame =
-      candleFlame ||
-      document.querySelector('.candle-flame');
-
+    const flame = candleFlame || document.querySelector('.candle-flame');
     if (!flame) return;
-
     const rect = flame.getBoundingClientRect();
+    const distX = e.clientX - (rect.left + rect.width / 2);
+    const distY = e.clientY - (rect.top + rect.height / 2);
+    const dist = Math.sqrt(distX * distX + distY * distY);
 
-    const distX =
-      event.clientX -
-      (rect.left + rect.width / 2);
-
-    const distY =
-      event.clientY -
-      (rect.top + rect.height / 2);
-
-    const distance =
-      Math.sqrt(distX * distX + distY * distY);
-
-    if (distance < 160) {
-      const factor = (160 - distance) / 160;
-
-      const angle =
-        (-distX / 160) * 22 * factor;
-
-      flame.style.transform =
-        `rotate(${angle}deg)
-         scaleY(${1 - factor * 0.15})`;
+    if (dist < 160) {
+      const factor = (160 - dist) / 160;
+      const angle = (-distX / 160) * 22 * factor;
+      flame.style.transform = `rotate(${angle}deg) scaleY(${1 - factor * 0.15})`;
     } else {
       flame.style.transform = '';
     }
   });
 
-  // ==========================================================================
-  // 🎙️ MICROPHONE
-  // ==========================================================================
-
+  /**
+   * Activate Microphone & Web Audio Engine
+   */
   async function activateMic() {
     audio.init();
-
     await blowDetector.resume();
-
     if (!isMicActive) {
       return await blowDetector.requestMicrophone();
     }
-
     return true;
   }
 
-  activateMic().catch(() => {});
+  // Auto-attempt activation
+  activateMic().catch(() => { });
 
   // Sound Toggle
-  soundToggleBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-
+  soundToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     audio.init();
-
     const muted = audio.toggleMute();
-
     soundIcon.textContent = muted ? '🔇' : '🔊';
   });
 
   // Tap Cake or Flame to Blow
-  cakeElement.addEventListener('click', (event) => {
+  cakeElement.addEventListener('click', (e) => {
     if (isLit) {
       audio.init();
       audio.playWhoosh(0.75);
@@ -1252,9 +914,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Dedicated Blow Button
   if (blowBtn) {
-    blowBtn.addEventListener('click', (event) => {
-      event.stopPropagation();
-
+    blowBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (isLit) {
         audio.init();
         audio.playWhoosh(0.85);
@@ -1263,43 +924,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Click Mic Status Pill
+  // Click Mic Status Pill to request mic or trigger test blow
   if (micStatusPill) {
-    micStatusPill.addEventListener(
-      'click',
-      async (event) => {
-        event.stopPropagation();
-
-        audio.init();
-
-        await blowDetector.resume();
-
-        if (!isMicActive) {
-          await activateMic();
-        } else if (isLit) {
-          audio.playWhoosh(0.7);
-          blowDetector.triggerManualBlow(500);
-        }
+    micStatusPill.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      audio.init();
+      await blowDetector.resume();
+      if (!isMicActive) {
+        await activateMic();
+      } else if (isLit) {
+        audio.playWhoosh(0.7);
+        blowDetector.triggerManualBlow(500);
       }
-    );
+    });
   }
 
-  // Keyboard support
-  window.addEventListener('keydown', (event) => {
-    if (
-      event.code === 'Space' ||
-      event.key === 'b' ||
-      event.key === 'B' ||
-      event.code === 'Enter'
-    ) {
-      if (
-        isLit &&
-        !storyOverlay.classList.contains('active') &&
-        !lightboxOverlay.classList.contains('active') &&
-        !managerOverlay.classList.contains('active')
-      ) {
-        event.preventDefault();
-
+  // Keyboard support: Space / B / Enter blows candle
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.key === 'b' || e.key === 'B' || e.code === 'Enter') {
+      if (isLit && !storyOverlay.classList.contains('active') && !lightboxOverlay.classList.contains('active') && !managerOverlay.classList.contains('active')) {
+        e.preventDefault();
         audio.init();
         audio.playWhoosh(0.85);
         blowDetector.triggerManualBlow(500);
@@ -1308,50 +952,23 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Story action buttons
-  relightBtn.addEventListener(
-    'click',
-    relightCandles
-  );
-
+  relightBtn.addEventListener('click', relightCandles);
   closeStoryBtn.addEventListener('click', () => {
     stopStoryTimer();
-
     storyOverlay.classList.remove('active');
-
     audio.playClick();
   });
 
-  // Unlock audio & mic on first gesture
+  // Unlock audio & mic on first gesture anywhere
   const onFirstInteraction = () => {
-    activateMic().catch(() => {});
-
-    window.removeEventListener(
-      'pointerdown',
-      onFirstInteraction
-    );
-
-    window.removeEventListener(
-      'keydown',
-      onFirstInteraction
-    );
+    activateMic().catch(() => { });
+    window.removeEventListener('pointerdown', onFirstInteraction);
+    window.removeEventListener('keydown', onFirstInteraction);
   };
+  window.addEventListener('pointerdown', onFirstInteraction, { once: true });
+  window.addEventListener('keydown', onFirstInteraction, { once: true });
 
-  window.addEventListener(
-    'pointerdown',
-    onFirstInteraction,
-    { once: true }
-  );
-
-  window.addEventListener(
-    'keydown',
-    onFirstInteraction,
-    { once: true }
-  );
-
-  // ==========================================================================
-  // 🚀 INITIALIZE APP
-  // ==========================================================================
-
+  // Init
   parseUrlParams();
   applyConfig();
 });
