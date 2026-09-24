@@ -709,11 +709,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Visual flame extinguish
     if (candleItem) candleItem.classList.add('extinguished');
     if (flame) {
-      flame.classList.add('flame-extinguishing', 'extinguished');
-      flame.style.display = 'none';
-      flame.style.opacity = '0';
-      flame.style.visibility = 'hidden';
-      flame.style.transform = 'scale(0.01) translateY(-15px)';
+      // Let the CSS extinguish animation actually play before hiding the flame.
+      flame.classList.remove('extinguished');
+      flame.classList.add('flame-extinguishing');
+      flame.style.display = '';
+      flame.style.visibility = 'visible';
+      flame.style.opacity = '';
+      flame.style.transform = '';
+
+      setTimeout(() => {
+        if (!isLit) {
+          flame.style.display = 'none';
+          flame.style.visibility = 'hidden';
+        }
+      }, 260);
     }
 
     document.body.classList.add('blown-out');
