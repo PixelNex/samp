@@ -234,6 +234,10 @@ class BlowDetector {
    * Programmatic / Manual blow simulation (for button, click, gesture, or keyboard)
    */
   triggerManualBlow(duration = 750) {
+    // Prevent overlapping manual blow animations from competing with the mic detector.
+    if (this.manualBlowActive) return;
+    this.manualBlowActive = true;
+
     const startTime = performance.now();
     const peakTime = startTime + duration * 0.45;
     let blownOut = false;
@@ -246,6 +250,7 @@ class BlowDetector {
           blownOut = true;
           this.onBlowDetected();
         }
+        this.manualBlowActive = false;
         return;
       }
 
@@ -263,6 +268,7 @@ class BlowDetector {
       if (elapsed > duration * 0.45 && !blownOut) {
         blownOut = true;
         this.onBlowDetected();
+        this.manualBlowActive = false;
       }
 
       requestAnimationFrame(animateSimulatedBlow);
